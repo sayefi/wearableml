@@ -13,9 +13,9 @@ trainData<-read.csv("data/training.csv")
 
 testData<-read.csv("data/testing.csv")
 
-trainData0<-read.csv("data/training.csv",nrows=500)
-
-colnames(trainData0)
+# trainData0<-read.csv("data/training.csv",nrows=500)
+# 
+# colnames(trainData0)
 
 
 reqdCols<-c("roll_belt",
@@ -84,21 +84,80 @@ trainDataX<-trainDataX[compCases,]
 
 summary(trainDataX)
 
+## Creating folds
+##------------------------------------------------
+
+folds<-createFolds(trainDataX$classe,k=10,list=TRUE)
+
+trainDataFold<-trainDataX[-folds$Fold01,]
+trainDataValidate<-trainDataX[folds$Fold01,]
+
+str(trainDataFold)
+
+##--------------------------------------------------
+
 trainDataP<-createDataPartition(trainDataX$classe,p=0.01,list=FALSE)
 
-
-
 trainDataPt<-trainDataX[trainDataP,]
+
+validateDataPt<-trainDataX[-trainDataP,]
+
+str(trainDataPt)
 
 # trainSVD<-svd(trainDataPt)
 
 modelFit<-train(classe~.,data=trainDataPt,method="rf")
 
-res<-predict(modelFit,testData)
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+# Accuracy : 0.9553 
+
+#-----------------------------------------------------
+
+modelFit<-train(classe~.,data=trainDataPt,method="rf",
+                              preProcess=c("center","scale"))
+
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+# Accuracy : 0.9538 
+
+#----------------------------------------------------
+set.seed(3523)
+
+library(AppliedPredictiveModeling)
+library(glmnet)
+
+dim(trainDataPt)
+str(trainDataPt[,1:50])
+
+x<-as.matrix(trainDataPt[,1:50])
+
+y<-as.numeric(trainDataPt$classe)
+
+fit<-glmnet(x,y,alpha=1)
+
+plot(fit)
+plot(fit, xvar="lambda", label=TRUE)
 
 
-folds<-createFolds(trainDataX$classe,k=10,list=TRUE)
+impCols<-c(1,2,30,44,18,19,31,7,12,9,5,20,32,6,42,51)
+#--------------------------------------------------------
 
+trainDataRidge<-trainDataPt[,impCols]
+
+str(trainDataRidge)
+
+modelFit<-train(classe~.,data=trainDataRidge,method="rf")
+
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+#-----------------------------
 
 
 
@@ -152,9 +211,15 @@ trainDataP<-createDataPartition(trainDataX$classe,p=0.8,list=FALSE)
 trainDataPartitioned<-trainDataX[trainDataP,]
 trainDataValidate<-trainDataX[-trainDataP,]
 
+dim(trainDataPartitioned)
+dim(trainDataValidate)
 
+modelFit<-train(classe~.,data=trainDataPartitioned,method="rf",
+                preProcess=c("center","scale"))
 
+res<-predict(modelFit,trainDataValidate)
 
+confusionMatrix(res,trainDataValidate$classe)
 
 
 str(testDataX)
