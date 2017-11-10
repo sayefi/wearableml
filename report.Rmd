@@ -1,0 +1,206 @@
+---
+title: "Classification of barbell lifts from data collected with wearable devices"
+author: "Sayef Ishauqe"
+date: "November 8, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Executive summary
+
+The goal of this project is to develop a machine learning model to classify
+how barbell lifts were performed based on data collected from wearable devices.
+In this project, RandomForest model has been developed to perform the classifcation.
+Considering the large dataset, the train method has been optimized to execute 
+within a limited amount of time without loosing accuracy. 
+
+### Analysis
+The data has been read from file. After examining the data some columns 
+has been removed. The rationale being having high % of NA values or columns that
+seems not going to have influence on the classification (such as user name, 
+time stamp, etc)
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+# url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+# download.file(url,"data/training.csv")
+# url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+# download.file(url,"data/testing.csv")
+trainData<-read.csv("data/training.csv")
+testData<-read.csv("data/testing.csv")
+
+library(dplyr)
+
+library(caret)
+
+```
+
+```{r}
+
+reqdCols<-c("roll_belt",
+            "pitch_belt",
+            "yaw_belt",
+            "total_accel_belt",
+            "gyros_belt_x",
+            "gyros_belt_y",
+            "gyros_belt_z",
+            "accel_belt_x",
+            "accel_belt_y",
+            "accel_belt_z",
+            "magnet_belt_x",
+            "magnet_belt_y",
+            "magnet_belt_z",
+            "roll_arm",
+            "pitch_arm",
+            "yaw_arm",
+            "total_accel_arm",
+            "gyros_arm_x",
+            "gyros_arm_y",
+            "gyros_arm_z",
+            "accel_arm_x",
+            "accel_arm_y",
+            "accel_arm_z",
+            "magnet_arm_x",
+            "magnet_arm_y",
+            "magnet_arm_z",
+            "roll_dumbbell",
+            "pitch_dumbbell",
+            "yaw_dumbbell",
+            "gyros_dumbbell_x",
+            "gyros_dumbbell_y",
+            "gyros_dumbbell_z",
+            "accel_dumbbell_x",
+            "accel_dumbbell_y",
+            "accel_dumbbell_z",
+            "magnet_dumbbell_x",
+            "magnet_dumbbell_y",
+            "magnet_dumbbell_z",
+            "roll_forearm",
+            "pitch_forearm",
+            "yaw_forearm",
+            "gyros_forearm_x",
+            "gyros_forearm_y",
+            "gyros_forearm_z",
+            "accel_forearm_x",
+            "accel_forearm_y",
+            "accel_forearm_z",
+            "magnet_forearm_x",
+            "magnet_forearm_y",
+            "magnet_forearm_z",
+            "classe")
+
+
+
+
+
+trainDataX<-select(trainData,reqdCols)
+
+compCases<-complete.cases(trainDataX)
+
+trainDataX<-trainDataX[compCases,]
+
+# summary(trainDataX)
+
+```
+
+A small dataset has been created to validate different method and parameters.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+trainDataP<-createDataPartition(trainDataX$classe,p=0.01,list=FALSE)
+
+trainDataPt<-trainDataX[trainDataP,]
+
+validateDataPt<-trainDataX[-trainDataP,]
+
+timeChart<-data.frame()
+
+
+set.seed(100)
+start_time<-Sys.time()
+modelFit<-train(classe~.,data=trainDataPt,method="rf")
+end_time<-Sys.time()
+
+res<-predict(modelFit,validateDataPt)
+
+cm<-confusionMatrix(res,validateDataPt$classe)
+
+timeChart[1,1]<-"rf"
+timeChart[1,2]<-"None"
+timeChart[1,3]<-dim(trainDataPt)[1]
+timeChart[1,4]<-round(end_time-start_time,2)
+timeChart[1,5]<-round(cm$overall[1],3)
+
+names(timeChart)<-c("Method","Pre-Processing/Parameters","Records",
+                 "duration","Accuracy")
+
+timeChart
+
+```
+
+The result is recorded in a a data frame for further analsis.It has been noticed
+that the accuracy on validation set is quite high with only 199 observations. Different
+pre-processing has been tried to improve performance at that point.
+
+```{r}
+timeChart<-readRDS("timechart.rds")
+timeChart
+
+```
+
+It has been identified that pca pre-processing significantly improved the 
+performance. With larger number of observations, the accuracy improved as well.
+
+Further looking into the resampling method, simpler resampling method oob improved
+performance without loosing accuracy. The plot of final models showed that it didn't
+improve significantly after around 100 trees. So, this is another performance tuning
+that has been looked at.
+```{r}
+modelFit<-readRDS("wearableModel2000.rds")
+plot(modelFit$finalModel,main="Error rate has reduced significantly within 100 trees")
+```
+
+However, with 2 CPU computer, the parallel processing didn't provide any significant
+performance gain.
+
+The final model preparation has been conducted with 80% training data and 20% 
+validation dataset with pca preprocessing, oob resampling and 200 trees.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+trainDataP<-createDataPartition(trainDataX$classe,p=0.8,list=FALSE)
+
+trainDataPt<-trainDataX[trainDataP,]
+
+validateDataPt<-trainDataX[-trainDataP,]
+
+set.seed(100)
+fitControl<-trainControl(method="oob")
+
+start_time<-Sys.time()
+modelFit<-train(classe~.,data=trainDataPt,method="rf",ntree = 200,
+                preProcess=c("pca"),
+                trainControl=fitControl)
+end_time<-Sys.time()
+
+
+res<-predict(modelFit,validateDataPt)
+
+cm<-confusionMatrix(res,validateDataPt$classe)
+
+
+timeChart[13,1]<-"rf"
+timeChart[13,2]<-"pca,oob resampling, 200 trees"
+timeChart[13,3]<-dim(trainDataPt)[1]
+timeChart[13,4]<-round(end_time-start_time,2)
+timeChart[13,5]<-round(cm$overall[1],3)
+
+
+
+```
+
+
+### Conclusion
+The model has achieved 97.8% accuracy on validation data set.The model has been
+stored in github repositry for further use and reference.

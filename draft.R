@@ -119,6 +119,7 @@ confusionMatrix(res,validateDataPt$classe)
 modelFit<-train(classe~.,data=trainDataPt,method="rf",
                               preProcess=c("center","scale"))
 
+modelFit
 res<-predict(modelFit,validateDataPt)
 
 confusionMatrix(res,validateDataPt$classe)
@@ -126,6 +127,128 @@ confusionMatrix(res,validateDataPt$classe)
 # Accuracy : 0.9538 
 
 #----------------------------------------------------
+
+fitControl<-trainControl(method="oob")
+
+modelFit<-train(classe~.,data=trainDataPt,method="rf",
+                preProcess=c("center","scale"),
+                trainControl=fitControl)
+
+modelFit
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+# Accuracy : 0.9554
+
+#----------------------------------------------------------
+## seeding up
+
+install.packages("doParallel")
+
+library(parallel)
+library(doParallel)
+
+plot(modelFit$finalModel)
+
+
+cluster <- makeCluster(detectCores()-1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl<-trainControl(method="oob",allowParallel = TRUE)
+
+start_time <- Sys.time()
+
+modelFit<-train(classe~.,data=trainDataPt,method="rf",ntree = 100,
+                preProcess=c("center","scale","pca"),
+                trainControl=fitControl)
+
+end_time <- Sys.time()
+
+start_time
+end_time
+stopCluster(cluster)
+registerDoSEQ()
+
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+# Accuracy : 0.8529
+#------------------------------------------------------------------
+## Now use the full dataset for training
+
+trainDataP<-createDataPartition(trainDataX$classe,p=0.8,list=FALSE)
+
+trainDataPt<-trainDataX[trainDataP,]
+
+validateDataPt<-trainDataX[-trainDataP,]
+
+str(trainDataPt)
+
+cluster <- makeCluster(detectCores()-1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+
+fitControl<-trainControl(method="oob",allowParallel = TRUE)
+
+start_time <- Sys.time()
+
+
+modelFit<-train(classe~.,data=trainDataPt,method="rf",ntree = 200,
+                preProcess=c("center","scale","pca"),
+                trainControl=fitControl)
+
+end_time <- Sys.time()
+
+
+end_time <- Sys.time()
+
+start_time
+end_time
+stopCluster(cluster)
+registerDoSEQ()
+
+res<-predict(modelFit,validateDataPt)
+
+confusionMatrix(res,validateDataPt$classe)
+
+saveRDS(modelFit,"warableModel.rds")
+
+#Accuracy : 0.9845
+
+
+
+
+
+trainDataPtx<-trainDataPt
+trainDataPtx$classe<-as.numeric(trainDataPtx$classe)
+
+x<-as.matrix(trainDataPtx)
+
+x<-scale(x,center = TRUE)
+
+trainSVD<-svd(trainDataPtx)
+
+plot(trainSVD$d)
+
+
+#-------------------------------------------------------
+
+preProc<-preProcess(trainDataPt,method="pca",thrash)
+
+trainPCA<-predict(preProc,trainDataPt)
+
+modelFit<-train(classe~.,data=trainPCA,model="rf")
+
+validatePCA<-predict(preProc,validateDataPt)
+
+res<-predict(modelFit,validatePCA)
+
+confusionMatrix(res,validateDataPt$classe)
+
+
+
+
 set.seed(3523)
 
 library(AppliedPredictiveModeling)
