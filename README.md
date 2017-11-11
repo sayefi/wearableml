@@ -5,10 +5,10 @@ This repository contains the source code and markdown files for creating machine
 devices to classify barbell exercies. 
 
 ## Content of the repository
-/data - contains downloaded files
-report.rmd - markdown file of the source code
-draft2.r - contains rough code and different options explored to prepare the model
-wearableModel.rds - contains the RDS file of generated machine learning model
+- /data - contains downloaded files
+- report.rmd - markdown file of the source code
+- draft2.r - contains rough code and different options explored to prepare the model
+- wearableModel.rds - contains the RDS file of generated machine learning model
 
 ## Data license
 This is part of Coursera machine learning assignment and the data has been obtained from 
