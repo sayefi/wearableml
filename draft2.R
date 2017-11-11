@@ -154,7 +154,7 @@ timeChart[1,4]<-round(end_time-start_time,2)
 timeChart[1,5]<-round(cm$overall[1],3)
 
 names(timeChart)<-c("Method","Pre-Processing/Parameters","No.Records",
-                 "duration","out-of-sample.error")
+                 "Duration","Accuracy")
 
 timeChart
 
@@ -412,7 +412,7 @@ cm<-confusionMatrix(res,validateDataPt$classe)
 end_time-start_time
 
 timeChart[11,1]<-"rf"
-timeChart[11,2]<-"pca with oob resampling, 200 trees"
+timeChart[11,2]<-"pca, oob resampling, 200 trees"
 timeChart[11,3]<-dim(trainDataPt)[1]
 timeChart[11,4]<-round(end_time-start_time,2)
 timeChart[11,5]<-round(cm$overall[1],3)
@@ -420,6 +420,9 @@ timeChart[11,5]<-round(cm$overall[1],3)
 timeChart
 
 #--------------------------------------------------------------------------
+library(parallel)
+library(doParallel)
+
 set.seed(100)
 fitControl<-trainControl(method="oob",allowParallel = TRUE)
 
@@ -442,7 +445,7 @@ cm<-confusionMatrix(res,validateDataPt$classe)
 end_time-start_time
 
 timeChart[12,1]<-"rf"
-timeChart[12,2]<-"pca,oob resampling, 200 trees, parallel processing"
+timeChart[12,2]<-"pca,oob, 200 trees, pp"
 timeChart[12,3]<-dim(trainDataPt)[1]
 timeChart[12,4]<-round(end_time-start_time,2)
 timeChart[12,5]<-round(cm$overall[1],3)
@@ -487,4 +490,6 @@ cm
 saveRDS(modelFit,"wearableModel.rds")
 
 saveRDS(timeChart,"timechart.rds")
+
+timeChart
 

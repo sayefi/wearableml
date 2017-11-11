@@ -23,7 +23,7 @@ has been removed. The rationale being having high % of NA values or columns that
 seems not going to have influence on the classification (such as user name, 
 time stamp, etc)
 
-```{r, message=FALSE, warning=FALSE, include=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE, cache=TRUE}
 # url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 # download.file(url,"data/training.csv")
 # url<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
@@ -37,7 +37,7 @@ library(caret)
 
 ```
 
-```{r}
+```{r, cache=TRUE}
 
 reqdCols<-c("roll_belt",
             "pitch_belt",
@@ -107,7 +107,7 @@ trainDataX<-trainDataX[compCases,]
 
 A small dataset has been created to validate different method and parameters.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 trainDataP<-createDataPartition(trainDataX$classe,p=0.01,list=FALSE)
 
 trainDataPt<-trainDataX[trainDataP,]
@@ -141,7 +141,7 @@ timeChart
 
 The result is recorded in a a data frame for further analsis.It has been noticed
 that the accuracy on validation set is quite high with only 199 observations. Different
-pre-processing has been tried to improve performance at that point.
+pre-processing methods has been tried to improve performance at that point.
 
 ```{r}
 timeChart<-readRDS("timechart.rds")
@@ -167,7 +167,7 @@ performance gain.
 The final model preparation has been conducted with 80% training data and 20% 
 validation dataset with pca preprocessing, oob resampling and 200 trees.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 trainDataP<-createDataPartition(trainDataX$classe,p=0.8,list=FALSE)
 
@@ -189,12 +189,16 @@ res<-predict(modelFit,validateDataPt)
 
 cm<-confusionMatrix(res,validateDataPt$classe)
 
+round(cm$overall[1],3)
+# 
+# timeChart[13,1]<-"rf"
+# timeChart[13,2]<-"pca,oob resampling, 200 trees"
+# timeChart[13,3]<-dim(trainDataPt)[1]
+# timeChart[13,4]<-round(end_time-start_time,2)
+# timeChart[13,5]<-round(cm$overall[1],3)
 
-timeChart[13,1]<-"rf"
-timeChart[13,2]<-"pca,oob resampling, 200 trees"
-timeChart[13,3]<-dim(trainDataPt)[1]
-timeChart[13,4]<-round(end_time-start_time,2)
-timeChart[13,5]<-round(cm$overall[1],3)
+# saveRDS(modelFit,"wearableModel.rds")
+# saveRDS(timeChart,"timechart.rds")
 
 
 
@@ -202,5 +206,5 @@ timeChart[13,5]<-round(cm$overall[1],3)
 
 
 ### Conclusion
-The model has achieved 97.8% accuracy on validation data set.The model has been
+The model has achieved `r round(cm$overall[1],3)` accuracy on validation data set.The model has been
 stored in github repositry for further use and reference.
