@@ -208,3 +208,9 @@ round(cm$overall[1],3)
 ### Conclusion
 The model has achieved `r round(cm$overall[1],3)` accuracy on validation data set.The model has been
 stored in github repositry for further use and reference.
+
+### Data Source
+The wearable data has been collected from the following website: 
+http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har.
+This dataset is licensed under the Creative Commons license (CC BY-SA). 
+
